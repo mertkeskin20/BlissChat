@@ -10,12 +10,12 @@ const useOtherUser = (conversation: FullConversationType | { users: User[] }) =>
     const currentUserEmail = session?.user?.email;
 
     if (!currentUserEmail || !conversation.users) {
-      return null; // Handle case where session or conversation.users is undefined
+      return undefined; // Return undefined instead of null
     }
 
     const otherUsers = conversation.users.filter((user) => user.email !== currentUserEmail);
 
-    return otherUsers.length > 0 ? otherUsers[0] : null; // Handle case where no other user is found
+    return otherUsers.length > 0 ? otherUsers[0] : undefined; // Return undefined instead of null
   }, [session?.user?.email, conversation.users]);
 
   return otherUser;
