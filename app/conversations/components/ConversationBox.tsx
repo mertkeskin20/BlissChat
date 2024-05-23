@@ -2,7 +2,6 @@
 
 import { useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { Conversation, Message, User } from "@prisma/client";
 import { format } from "date-fns";
 import { useSession } from "next-auth/react";
 import clsx from "clsx";
@@ -22,7 +21,7 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({
   selected,
 }) => {
   const otherUser = useOtherUser(data);
-  const session = useSession();
+  const { data: session } = useSession();
   const router = useRouter();
 
   const handleClick = useCallback(() => {
@@ -31,26 +30,18 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({
 
   const lastMessage = useMemo(() => {
     const messages = data.messages || [];
-
     return messages[messages.length - 1];
   }, [data.messages]);
 
-  const userEmail = useMemo(() => {
-    return session.data?.user?.email;
-  }, [session.data?.user?.email]);
+  const userEmail = session?.user?.email;
 
   const hasSeen = useMemo(() => {
-    if (!lastMessage) {
+    if (!lastMessage || !userEmail) {
       return false;
     }
 
     const seenArray = lastMessage.seen || [];
-
-    if (!userEmail) {
-      return false;
-    }
-
-    return seenArray.filter((user) => user.email === userEmail).length !== 0;
+    return seenArray.some((user) => user.email === userEmail);
   }, [userEmail, lastMessage]);
 
   const lastMessageText = useMemo(() => {
@@ -64,6 +55,10 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({
 
     return "Started a conversation";
   }, [lastMessage]);
+
+  if (!data || !otherUser) {
+    return null; // or some fallback UI
+  }
 
   return (
     <div
@@ -83,12 +78,12 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({
           `,
         selected ? "bg-neutral-100" : "bg-white"
       )}
-    > 
-      {data.isGroup ?(
+    >
+      {data.isGroup ? (
         <AvatarGroup users={data.users} />
-      ):(
-      <Avatar user={otherUser} />
-      )} 
+      ) : (
+        <Avatar user={otherUser} />
+      )}
       <div className="min-w-0 flex-1">
         <div className="focus:outline-none">
           <div
@@ -106,7 +101,7 @@ const ConversationBox: React.FC<ConversationBoxProps> = ({
                     text-gray-900
                   "
             >
-              {data.name || otherUser.name}
+              {data.name || otherUser.name || 'Unknown User'}
             </p>
             {lastMessage?.createdAt && (
               <p
